@@ -32,12 +32,12 @@ def init_db(conn):
     """)
 
 def save_videos(conn, items):
-    """Зберігає відео та їхні канали. Повторне збереження не створює дублікатів."""
-    with conn:   
+    """Зберігає відео та канали. Повертає кількість НОВИХ відео."""
+    before = conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]   
+
+    with conn:
         for item in items:
             snippet = item["snippet"]
-
-          
             conn.execute(
                 """
                 INSERT INTO channels (id, title) VALUES (?, ?)
@@ -45,7 +45,6 @@ def save_videos(conn, items):
                 """,
                 (snippet["channelId"], snippet["channelTitle"]),
             )
-          
             conn.execute(
                 """
                 INSERT INTO videos (id, title, published_at, channel_id) VALUES (?, ?, ?, ?)
@@ -53,13 +52,14 @@ def save_videos(conn, items):
                 """,
                 (
                     item["id"]["videoId"],
-                    html.unescape(snippet["title"]),  
+                    html.unescape(snippet["title"]),
                     snippet["publishedAt"],
-                    snippet["channelId"],             
+                    snippet["channelId"],
                 ),
             )
-    return len(items)
 
+    after = conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]   
+    return after - before                                                
 
 if __name__ == "__main__":
     conn = get_connection()

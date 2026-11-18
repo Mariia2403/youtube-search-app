@@ -35,10 +35,10 @@ def main():
 
     conn = get_connection()
     try:
-        init_db(conn)                          
-        saved = save_videos(conn, videos)
-        print(f"\nЗбережено в базу: {saved} відео.")
-    except sqlite3.Error as error:             
+        init_db(conn)
+        new_count = save_videos(conn, videos)
+        print(f"\nНових відео збережено: {new_count}. Уже були в базі: {len(videos) - new_count}.")
+    except sqlite3.Error as error:          
         print(f"Помилка бази даних: {error}")
     finally:
         conn.close()                           
