@@ -61,6 +61,16 @@ def save_videos(conn, items):
     after = conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]   
     return after - before                                                
 
+
+def get_saved_videos(conn):
+    """Повертає всі збережені відео разом із назвою каналу."""
+    return conn.execute("""
+        SELECT channels.title, videos.title, videos.published_at, videos.id
+        FROM videos
+        JOIN channels ON videos.channel_id = channels.id   -- склеюємо за FK → PK
+        ORDER BY channels.title, videos.published_at DESC  -- за каналом, всередині від нових до старих
+    """).fetchall()
+
 if __name__ == "__main__":
     conn = get_connection()
     init_db(conn)
