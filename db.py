@@ -1,3 +1,4 @@
+import html
 import os
 import sqlite3
 from dotenv import load_dotenv
@@ -29,6 +30,35 @@ def init_db(conn):
             channel_id   TEXT NOT NULL REFERENCES channels(id)   -- FK → channels.id
         );
     """)
+
+def save_videos(conn, items):
+    """Зберігає відео та їхні канали. Повторне збереження не створює дублікатів."""
+    with conn:   
+        for item in items:
+            snippet = item["snippet"]
+
+          
+            conn.execute(
+                """
+                INSERT INTO channels (id, title) VALUES (?, ?)
+                ON CONFLICT (id) DO UPDATE SET title = excluded.title
+                """,
+                (snippet["channelId"], snippet["channelTitle"]),
+            )
+          
+            conn.execute(
+                """
+                INSERT INTO videos (id, title, published_at, channel_id) VALUES (?, ?, ?, ?)
+                ON CONFLICT (id) DO UPDATE SET title = excluded.title
+                """,
+                (
+                    item["id"]["videoId"],
+                    html.unescape(snippet["title"]),  
+                    snippet["publishedAt"],
+                    snippet["channelId"],             
+                ),
+            )
+    return len(items)
 
 
 if __name__ == "__main__":
