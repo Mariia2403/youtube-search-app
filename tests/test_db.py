@@ -66,8 +66,8 @@ def test_get_saved_videos_joins_channel_title(conn):
 
     rows = get_saved_videos(conn)
 
-    assert rows == [("TechWorld", "Docker 101", "2025-01-01T00:00:00Z", "v1")]
-    # перше поле — назва каналу з таблиці channels, тобто JOIN спрацював
+    assert rows == [("TechWorld", "Docker 101", "2025-01-01T00:00:00Z", "v1", None, None)]
+    # None, None — статистику не передавали
 
 
 def test_foreign_key_blocks_video_without_channel(conn):
@@ -76,3 +76,29 @@ def test_foreign_key_blocks_video_without_channel(conn):
             "INSERT INTO videos (id, title, channel_id) VALUES (?, ?, ?)",
             ("v1", "Orphan video", "no-such-channel"),
         )
+
+def test_stats_saved_and_updated_on_repeat(conn):
+    items = [make_item("v1", "c1")]
+    save_videos(conn, items, {"v1": {"views": 100, "likes": 5}})
+
+    save_videos(conn, items, {"v1": {"views": 150, "likes": 7}})    # через день переглядів більше
+
+    row = conn.execute("SELECT view_count, like_count FROM videos WHERE id = 'v1'").fetchone()
+    assert row == (150, 7)                     # статистика оновилася
+    assert count(conn, "videos") == 1          # а дубліката немає
+
+
+def test_init_db_migrates_old_table():
+    old = sqlite3.connect(":memory:")
+    old.executescript("""
+        CREATE TABLE channels (id TEXT PRIMARY KEY, title TEXT NOT NULL);
+        CREATE TABLE videos (id TEXT PRIMARY KEY, title TEXT NOT NULL,
+                             published_at TEXT, channel_id TEXT NOT NULL REFERENCES channels(id));
+    """)                                       # база «старої версії», без статистики
+
+    init_db(old)
+
+    columns = [row[1] for row in old.execute("PRAGMA table_info(videos)")]
+    assert "view_count" in columns
+    assert "like_count" in columns
+    old.close()
