@@ -120,6 +120,17 @@ python gui.py
 
 Пошук (кнопкою або Enter), таблиця з переглядами й лайками, перегляд збереженого, подвійний клік відкриває відео в браузері.
 
+## Запуск у Docker
+Python і venv не потрібні, лише Docker Desktop.
+
+```powershell
+docker build -t youtube-search-app .
+docker run -it --rm --env-file .env -v youtube-data:/app/data youtube-search-app
+```
+
+- ключ API передається під час запуску (`--env-file`) і не потрапляє в образ (`.env` у `.dockerignore`);
+- база зберігається у volume `youtube-data` і не зникає після видалення контейнера.
+
 ## Скриншоти
 
 **Пошук і збереження**
@@ -139,5 +150,8 @@ python gui.py
 
 **Графічний інтерфейс**
 ![GUI](screenshots/06-gui.png)
+
+**Docker: дані зберігаються у volume**
+![Docker](screenshots/07-docker.png)
 
 
